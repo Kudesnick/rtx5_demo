@@ -16,6 +16,11 @@
     __asm (".global __ARM_use_no_argv\n\t" "__ARM_use_no_argv:\n\t");
 #endif
 
+// -- id
+osThreadId_t id = NULL;
+
+osMutexId_t mutex_id;
+
 // -- main thread func
 void thread_main(void *param)
 {
@@ -25,7 +30,7 @@ void thread_main(void *param)
     
     for (;;)
     {
-       
+
     }
 };
 
@@ -36,25 +41,33 @@ void thread_static(void *param)
     
     printf("<thread_static> start\r\n");
     
+    osMutexAcquire(mutex_id, osWaitForever);
+    
     for (;;)
     {
-       
+        osThreadExit();
     }
 };
 
 uint64_t stack[0x1000/sizeof(uint64_t)]; 
-// __attribute__((section(".bss.os.thread.cb")))
-// osRtxThread_t tcb;
-
 osThreadAttr_t attr =
 {
     .name       = "thread_static",
-//    .attr_bits  = osThreadJoinable,
+    .attr_bits  = osThreadJoinable,
 //    .cb_mem     = &tcb,
-//    .cb_size    = sizeof(tcb),
+//    .cb_size    = sizeof(osRtxThread_t),
     .stack_mem  = stack,
     .stack_size = sizeof(stack),
     .priority   = osPriorityNormal,
+};
+
+// -- mutex
+const osMutexAttr_t Thread_Mutex_attr =
+{
+  "myThreadMutex",                          // human readable mutex name
+  osMutexRobust | osMutexRecursive | osMutexPrioInherit,    // attr_bits
+  NULL,                                     // memory for control block   
+  0U                                        // size for control block
 };
 
 // -- main function
@@ -83,7 +96,11 @@ int main(void)
 
     // Threads create
     osThreadNew(thread_main, NULL, NULL);
-    osThreadNew(thread_static, NULL, &attr);
+    
+    id = osThreadNew(thread_static, NULL, &attr);
+    
+    mutex_id = osMutexNew(&Thread_Mutex_attr);
+    
 
     osKernelStart(); // start RTX kernel
     
