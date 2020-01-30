@@ -1,0 +1,5 @@
+output/
+DebugConfig
+*.uvguix.*
+*.uvgui.*
+*.scvd
